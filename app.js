@@ -41,11 +41,12 @@ function fmtClock(t) { const m = /^(\d+)[.:](\d+)/.exec(t || '00.00'); return m 
 function shortWhen(w) { return String(w || '').replace(/^\w+, /, ''); }
 
 /* ---------- state ---------- */
+const EDIT = /[?&]edit/.test(location.search);
 const S = { time: CF.startTime, batt: ST.initialBattery, app: null, view: null, viewing: null, cur: null, pending: null,
   chats: {}, order: CF.chatOrder.slice(), notes: ST.notes.slice(), tweets: ST.tweets.filter(t => t.k === 'tweet'), day9Tweets: [], calls: [],
   badges: {}, ended: false, waView: null, ui: null, noteNew: {} };
 Object.keys(ST.chats).forEach(id => {
-  const h = ST.chats[id].history.map(x => Object.assign({}, x));
+  const h = ST.chats[id].history.map(x => Object.assign({}, x, { _src: x }));
   for (let i = 0; i < h.length; i++) if (h[i].k === 'narr' && /belum dibaca/.test(h[i].text))
     for (let j = i - 1; j >= 0 && h[j].k === 'msg' && h[j].from === 'me'; j--) h[j].single = true;
   S.chats[id] = { id, msgs: h, unread: 0, lastT: null, day9: false, day10: false };
@@ -232,7 +233,10 @@ APPS.whatsapp = function (o) {
       b.appendChild(w); b.insertAdjacentHTML('beforeend', tm);
     } else if (it.type === 'voice') {
       b.appendChild(voiceNode(it)); b.insertAdjacentHTML('beforeend', tm);
-    } else { b.insertAdjacentHTML('beforeend', esc(it.text) + tm); }
+    } else {
+      b.insertAdjacentHTML('beforeend', esc(it.text) + tm);
+      if (EDIT) { b.style.cursor = 'pointer'; b.onclick = () => { const v = prompt('Edit pesan:', it.text); if (v != null) { it.text = v; if (it._src) it._src.text = v; chat(c.id); } }; }
+    }
     return b;
   }
   function voiceNode(it) {
@@ -273,27 +277,44 @@ APPS.whatsapp = function (o) {
     const plus = el('span', '', '＋'); plus.style.fontSize = '24px';
     comp.append(plus, inp, act); body.appendChild(comp);
     const kb = buildKeyboard(); body.appendChild(kb);
-    let typed = false, typing = false;
+    let typed = false, typing = false, pos = 0, free = '';
+    const pendText = () => { const p = S.pending; return p && p.chat === id ? (p.item.text || ('[' + (p.item.type || 'media') + '] ' + (p.item.desc || ''))) : null; };
+    const setAct = () => { const on = typed || free.trim(); act.innerHTML = on ? '<span class="send">➤</span>' : '📷  🎤'; act.onclick = on ? doSend : null; };
+    const doSend = () => { if (typed) sendPending(); else if (free.trim()) { const it = { k: 'msg', t: S.time, from: 'me', text: free.trim(), free: true }; free = ''; inp.innerHTML = ''; setAct(); addItem(id, it); } };
     const ui = S.ui = {
       id, msgs, kb, inp,
       append(it) { const b = bubble(c, it, c.msgs.length - 1); if (b) { msgs.appendChild(b); msgs.scrollTo({ top: msgs.scrollHeight, behavior: 'smooth' }); } },
       setTyping(who) { sub.className = who ? 'ty' : ''; sub.textContent = who ? (isGroup(id) ? P(who).name.toLowerCase() + ' sedang mengetik…' : 'sedang mengetik…') : (isGroup(id) ? groupSub(id) : 'online'); },
-      refresh() { const mine = S.pending && S.pending.chat === id; inp.classList.toggle('hot', !!mine && !typed && !typing); if (mine && !typed && !typing) inp.innerHTML = ''; },
-      clear() { typed = false; typing = false; inp.innerHTML = ''; inp.classList.remove('hot'); act.innerHTML = '📷  🎤'; act.onclick = null; kb.classList.remove('show'); }
+      refresh() { const mine = pendText() !== null; inp.classList.toggle('hot', mine && !typed && !typing && !kb.classList.contains('show')); inp.dataset.ph = mine && !typed ? 'ketuk keyboard untuk mengetik…' : ''; if (mine && !typed && !typing && !pos) inp.innerHTML = ''; },
+      clear() { typed = false; typing = false; pos = 0; free = ''; inp.innerHTML = ''; inp.classList.remove('hot'); inp.dataset.ph = ''; setAct(); kb.classList.remove('show'); },
+      press(ch) {
+        if (typing) return;
+        if (ch.length === 1) flashKey(kb, ch);
+        if (ch === '\n') return doSend();
+        const t = pendText();
+        if (t !== null) {
+          if (typed || ch === '\b') return;
+          pos = Math.min(t.length, pos + 3); inp.innerHTML = esc(t.slice(0, pos)) + '<span class="cur"></span>';
+          if (pos >= t.length) { typed = true; inp.innerHTML = esc(t); setAct(); }
+          return;
+        }
+        if (ch === '\b') free = free.slice(0, -1); else free += ch;
+        inp.innerHTML = free ? esc(free) + '<span class="cur"></span>' : ''; setAct();
+      }
     };
-    ui.refresh();
+    ui.refresh(); setAct();
+    kb.onclick = e => { const k = e.target.closest('.k'); if (!k) return; const a = k.dataset.act; const ch = a === 'bs' ? '\b' : a === 'go' ? '\n' : k.dataset.k; if (ch != null) ui.press(ch); };
     inp.onclick = async () => {
-      const p = S.pending; if (!p || p.chat !== id || typing || typed) return;
-      typing = true; inp.classList.remove('hot'); kb.classList.add('show');
-      const text = p.item.text || ('[' + (p.item.type || 'media') + '] ' + (p.item.desc || ''));
-      let shown = ''; inp.innerHTML = '<span class="cur"></span>';
-      for (const ch of text) {
+      kb.classList.add('show'); inp.classList.remove('hot');
+      const t = pendText();
+      if (t === null || typing || typed || CF.typeMode !== 'auto') return;
+      typing = true; let shown = ''; inp.innerHTML = '<span class="cur"></span>';
+      for (const ch of t) {
         if (S.viewing !== id) { typing = false; return; }
         shown += ch; inp.innerHTML = esc(shown) + '<span class="cur"></span>'; flashKey(kb, ch);
         await sleep(CF.typeSpeedMs + (ch === ' ' ? 10 : 0));
       }
-      typing = false; typed = true; inp.innerHTML = esc(shown);
-      act.innerHTML = '<span class="send">➤</span>'; act.onclick = () => sendPending();
+      typing = false; typed = true; pos = t.length; inp.innerHTML = esc(shown); setAct();
     };
     onChatOpened(id);
   }
@@ -310,10 +331,10 @@ function buildKeyboard() {
   ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'].forEach((r, i) => {
     const row = el('div', 'row'); if (i === 2) row.appendChild(el('div', 'k fn', '⇧'));
     r.split('').forEach(ch => { const k = el('div', 'k', ch); k.dataset.k = ch; row.appendChild(k); });
-    if (i === 2) row.appendChild(el('div', 'k fn', '⌫')); kb.appendChild(row);
+    if (i === 2) { const bs = el('div', 'k fn', '⌫'); bs.dataset.act = 'bs'; row.appendChild(bs); } kb.appendChild(row);
   });
   const r = el('div', 'row'); r.append(el('div', 'k fn', '123'), Object.assign(el('div', 'k sp', ' '), { }), el('div', 'k go', 'kirim'));
-  r.children[1].dataset.k = ' '; kb.appendChild(r); return kb;
+  r.children[1].dataset.k = ' '; r.children[2].dataset.act = 'go'; kb.appendChild(r); return kb;
 }
 function flashKey(kb, ch) {
   const k = kb.querySelector('[data-k="' + ch.toLowerCase().replace(/"/g, '\\"') + '"]'); if (!k) return;
@@ -398,7 +419,7 @@ function onChatOpened(id) {
 }
 function sendPending() {
   const p = S.pending; if (!p) return; S.pending = null;
-  const ui = S.ui; ui && ui.clear(); addItem(p.chat, Object.assign({}, p.item));
+  const ui = S.ui; ui && ui.clear(); addItem(p.chat, Object.assign({}, p.item, { _src: p.item }));
   p.ctx.ptr++; runLive(p.ctx);
 }
 function finishScene(ctx) {
@@ -438,6 +459,7 @@ APPS.notes = function (o) {
     body.innerHTML = '<div class="nhead"><span class="bk">‹ Catatan</span><span>⬆ ⋯</span></div>';
     body.firstChild.querySelector('.bk').onclick = () => { back(); };
     const sc = el('div', 'scroll'); const d = el('div', 'ndetail'); d.innerHTML = '<h1>catatan ' + n.no + '. ' + esc(n.title) + '</h1>' + n.body.map(p => '<p>' + esc(p) + '</p>').join(''); sc.appendChild(d); body.appendChild(sc);
+    if (EDIT) d.querySelectorAll('p').forEach((pp, i) => { pp.style.cursor = 'pointer'; pp.onclick = () => { const v = prompt('Edit paragraf:', n.body[i]); if (v != null) { n.body[i] = v; pp.textContent = v; } }; });
     if (S.cur && S.cur.def.type === 'note' && S.cur.def.note.no === n.no) { S.cur.opened = true; view.cur = S.cur; }
   }
   function back() { list(); if (view.cur && view.cur.opened) { const c = view.cur; view.cur = null; finishScene(c); } }
@@ -605,6 +627,20 @@ APPS.safari = function () {
 };
 
 /* ---------- mulai ---------- */
+document.addEventListener('keydown', e => {
+  const ui = S.ui; if (!ui || e.ctrlKey || e.metaKey || e.altKey) return;
+  const ch = e.key.length === 1 ? e.key : (e.key === 'Backspace' ? '\b' : (e.key === 'Enter' ? '\n' : null)); if (ch === null) return;
+  e.preventDefault(); ui.kb.classList.add('show'); ui.press(ch);
+});
+if (EDIT) {
+  const pn = el('div'); pn.style.cssText = 'position:fixed;top:12px;right:12px;z-index:999;background:#222;border:1px solid #555;border-radius:12px;padding:10px 14px;font-size:13px;max-width:230px;line-height:1.4';
+  pn.innerHTML = '✏️ <b>Mode edit</b><br>Ketuk pesan atau paragraf catatan untuk mengubah teksnya.<br><button id="dlst" style="margin-top:8px;background:#2f95ff;border-radius:8px;padding:6px 10px">⬇ Unduh story.js</button>';
+  document.body.appendChild(pn);
+  $('#dlst').onclick = () => {
+    const txt = '// story.js hasil mode edit\nwindow.STORY = ' + JSON.stringify(ST, (k, v) => k === '_src' ? undefined : v, 1) + ';\n';
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/javascript' })); a.download = 'story.js'; a.click();
+  };
+}
 window.__PHONE = S; S.openTarget = openTarget;
 buildChrome();
 if (/[?&]debug=/.test(location.search)) { $('#pass').classList.remove('show'); unlock(); }

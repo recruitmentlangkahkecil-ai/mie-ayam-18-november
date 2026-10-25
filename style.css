@@ -253,3 +253,5 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 @keyframes glow{50%{outline-color:rgba(47,149,255,.2)}}
 @keyframes shake{20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
 @keyframes ring{20%,60%{transform:rotate(-14deg)}40%,80%{transform:rotate(14deg)}}
+
+.comp .in:empty::before{content:attr(data-ph);color:#8e8e93}
