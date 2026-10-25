@@ -55,3 +55,34 @@ riku, sion, yushi, daeyoung, ryo, sakuya, mama, coach, jeno, haechan, jisung, ja
 ## Wallpaper & widget -> `assets/ui/`
 
 lockscreen, wallpaper, widget-photo, chat-bg (opsional)
+
+## Foto di tweet X -> `assets/photos/<id>.jpg` (atau langsung di root repo)
+
+Tweet hanya menampilkan foto kalau file-nya ada. Kalau tidak ada, tweet tetap teks saja.
+
+| id | akun | awal tweet |
+|---|---|---|
+| xt-01 | @NeoCity_Siaga | Pembaruan kasus gigitan di kawasan Pelabuhan Utara Neo City. Hingga pu |
+| xt-02 | @dr_hana | Sebagai dokter, saya belum bisa mengonfirmasi ini rabies. Beberapa lap |
+| xt-03 | @neo_resident | rabies jenis baru ngapain sampai gigit orang ramai-ramai, kan nggak ma |
+| xt-04 | @NeoCity_Siaga | BREAKING 10.30. Kasus gigitan serupa dilaporkan di beberapa titik di D |
+| xt-05 | @peta_wabah | Pembaruan 12.00. Data sementara dari laporan warga dan unit tanggap da |
+| xt-06 | @neo_resident | temanku di sma neo lumina bilang ada yang digigit di kantin. dan dia l |
+| xt-07 | @NeoCity_Siaga | Pemerintah Neo City menetapkan KONDISI DARURAT SIPIL di seluruh wilaya |
+| xt-08 | @peta_wabah | Pembaruan 14.00. Tergigit 9.870 orang. Dilaporkan hilang 1.342. Titik  |
+| xt-09 | @dr_hana | Untuk yang terjebak di dalam gedung: air adalah prioritas pertama, mak |
+| xt-10 | @NeoCity_Siaga | Pemadaman listrik terjadi di sebagian besar Neo City sejak pukul 02.17 |
+| xt-11 | @peta_wabah | Pembaruan 08.00. Tergigit 38.415 orang. Dilaporkan hilang 6.208. Titik |
+| xt-12 | @peta_wabah | POLA PENTING (21.00). Dari 214 laporan lapangan yang terverifikasi, me |
+| xt-13 | @dr_hana | Saya mengonfirmasi respons mereka terhadap suara konsisten pada bebera |
+| xt-14 | @neo_resident | nonaktifin ringtone, guys. serius. tetangga aku selamat karena itu. |
+| xt-15 | @NeoCity_Siaga | Informasi posko: Aether Plaza Evacuation Hub di Distrik Lumina mulai m |
+| xt-16 | @peta_wabah | Pembaruan 07.30. Tergigit 102.348 orang. Dilaporkan hilang 21.115. Sel |
+| xt-17 | @NeoCity_Siaga | INFORMASI DONASI. Pemerintah menerima donasi air kemasan, makanan non- |
+| xt-18 | @peta_wabah | Pembaruan 10.00. Tergigit 131.760 orang. Dilaporkan hilang 31.884. Sel |
+| xt-19 | @NeoCity_Siaga | Posko Aether Plaza kini menampung 11.082 orang. Kapasitas ditambah den |
+| xt-20 | @peta_wabah | Rute yang dipantau aman dalam 24 jam terakhir: jalan-jalan kecil sisi  |
+| xt-21 | @peta_wabah | Pembaruan 18.00. Tergigit 171.940 orang. Dilaporkan hilang 52.318. Sel |
+| xt-22 | @peta_wabah (Day 9, 08.00) | Pembaruan 07.30, Selasa 11 November (Day 9 sejak kasus pertama). Tergi |
+| xt-23 | @NeoCity_Siaga (Day 9, 08.00) | INFORMASI POSKO DAN DONASI, 08.00. Aether Plaza Evacuation Hub kini me |
+| xt-24 | @dr_hana (Day 9, 08.00) | Untuk yang terkunci dengan air terbatas: bibir pecah, urine gelap dan  |
